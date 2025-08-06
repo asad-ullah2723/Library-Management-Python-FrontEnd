@@ -7,7 +7,7 @@ const App = () => {
   const [searchAuthor, setSearchAuthor] = useState('');
   const [newBook, setNewBook] = useState({ title: '', author: '' });
 
-  // Fetch all books initially
+
   const fetchBooks = async () => {
     try {
       const res = await axios.get(`http://localhost:8000/books/search`);
