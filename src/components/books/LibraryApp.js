@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Paper, Typography, Button, Box, TextField, InputAdornment } from '@mui/material';
 import axios from 'axios';
+import api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import BookForm from './BookForm';
 import BookSearch from './BookSearch';
 import BookList from './BookList';
@@ -22,11 +24,13 @@ const LibraryApp = () => {
   const [page, setPage] = useState(1);
   const [totalBooks, setTotalBooks] = useState(0);
   const limit = 10; // Number of books per page
+  const { user } = useAuth();
+  const canModify = user?.role === 'admin' || user?.role === 'librarian';
 
   const fetchBooks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:9000/books/', {
+      const response = await api.get('/books/', {
         params: {
           skip: (page - 1) * limit,
           limit
@@ -59,7 +63,7 @@ const LibraryApp = () => {
         ...newBook,
         price: parseFloat(newBook.price)  // Ensure price is a number
       };
-      const res = await axios.post('http://localhost:9000/books', bookData);
+  const res = await api.post('/books/', bookData);
       setBooks([...books, res.data]);
       setNewBook({ 
         title: '', 
@@ -77,7 +81,7 @@ const LibraryApp = () => {
   // Delete a book
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:9000/books/${id}`);
+  await api.delete(`/books/${id}`);
       setBooks(books.filter(book => book.id !== id));
     } catch (err) {
       alert('Failed to delete book');
@@ -87,7 +91,7 @@ const LibraryApp = () => {
   // Search books
   const handleSearch = async () => {
     try {
-      const res = await axios.get(`http://localhost:9000/books/search`, {
+      const res = await api.get(`/books/search`, {
         params: {
           title: searchTitle || undefined,
           author: searchAuthor || undefined,
@@ -108,14 +112,16 @@ const LibraryApp = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Add Book Form */}
-      <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" gutterBottom>Add New Book</Typography>
-        <BookForm 
-          newBook={newBook}
-          setNewBook={setNewBook}
-          handleAddBook={handleAddBook}
-        />
-      </Paper>
+      {canModify && (
+        <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+          <Typography variant="h5" gutterBottom>Add New Book</Typography>
+          <BookForm 
+            newBook={newBook}
+            setNewBook={setNewBook}
+            handleAddBook={handleAddBook}
+          />
+        </Paper>
+      )}
 
       {/* Search Books */}
       <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
@@ -159,6 +165,7 @@ const LibraryApp = () => {
       <BookList 
         books={books}
         handleDelete={handleDelete}
+        canModify={canModify}
       />
       
       {books.length === 0 && !loading && (

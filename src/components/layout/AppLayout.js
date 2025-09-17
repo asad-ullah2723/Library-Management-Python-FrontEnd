@@ -30,6 +30,7 @@ import ResetPassword from '../auth/ResetPassword';
 
 // Main App Components
 import LibraryApp from '../books/LibraryApp';
+import CreateUserModal from '../admin/CreateUserModal';
 
 const AppLayout = () => {
   const { user, logout } = useAuth();
@@ -50,6 +51,10 @@ const AppLayout = () => {
     logout();
     navigate('/login');
   };
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const openCreateModal = () => { setCreateOpen(true); handleClose(); };
+  const closeCreateModal = () => setCreateOpen(false);
 
   // Don't show app bar on auth pages
   const isAuthPage = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
@@ -113,6 +118,12 @@ const AppLayout = () => {
                   <ExitToApp fontSize="small" sx={{ mr: 1 }} />
                   Logout
                 </MenuItem>
+                {user?.role === 'admin' && (
+                  <MenuItem onClick={openCreateModal}>
+                    <Person fontSize="small" sx={{ mr: 1 }} />
+                    Create User
+                  </MenuItem>
+                )}
               </Menu>
             </div>
           ) : (
@@ -143,6 +154,7 @@ const AppLayout = () => {
           </Route>
         </Routes>
       </Container>
+      <CreateUserModal open={createOpen} onClose={closeCreateModal} />
     </>
   );
 };

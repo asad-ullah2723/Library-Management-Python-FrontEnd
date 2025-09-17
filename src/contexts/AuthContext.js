@@ -31,7 +31,9 @@ export const AuthProvider = ({ children }) => {
         setUser({
           id: response.data.id,
           email: response.data.email,
-          name: response.data.full_name || response.data.email
+          name: response.data.full_name || response.data.email,
+          role: response.data.role,
+          is_active: response.data.is_active
         });
       }
     } catch (err) {
@@ -53,13 +55,14 @@ export const AuthProvider = ({ children }) => {
       
       if (response?.access_token) {
         // Store user data from the login response
-        const { access_token, user_id, email: userEmail } = response;
+        const { access_token, user_id, email: userEmail, role } = response;
         localStorage.setItem('access_token', access_token);
-        
-        // Update user state
+
+        // Update user state (include role)
         setUser({
           id: user_id,
           email: userEmail,
+          role,
           isAuthenticated: true
         });
         

@@ -29,7 +29,7 @@ const useStyles = {
   },
 };
 
-const BookList = ({ books, handleDelete }) => {
+const BookList = ({ books, handleDelete, canModify = false }) => {
   if (books.length === 0) {
     return (
       <Paper sx={{ p: 3, textAlign: 'center' }}>
@@ -62,13 +62,15 @@ const BookList = ({ books, handleDelete }) => {
             </CardContent>
             <CardActions sx={useStyles.actionArea}>
               <div></div> {/* Spacer */}
-              <IconButton 
-                color="error" 
-                onClick={() => handleDelete(book.id)}
-                aria-label="delete"
-              >
-                <DeleteIcon />
-              </IconButton>
+              {canModify && (
+                <IconButton 
+                  color="error" 
+                  onClick={() => handleDelete(book.id)}
+                  aria-label="delete"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              )}
             </CardActions>
           </Card>
         </Grid>
