@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
       if (response?.access_token) {
         // Store user data from the login response
         const { access_token, user_id, email: userEmail } = response;
-        localStorage.setItem('token', access_token);
+        localStorage.setItem('access_token', access_token);
         
         // Update user state
         setUser({

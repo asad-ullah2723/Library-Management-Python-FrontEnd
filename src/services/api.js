@@ -1,77 +1,71 @@
 import axios from 'axios';
 
+// Single axios instance. Prefer explicit backend URL via REACT_APP_API_URL.
+// If not set and we're in development, default to the backend dev server
+// at http://localhost:9000 to avoid accidental requests to the frontend host (3000).
+// In production, default to '/' so relative paths are used.
+const defaultDevApi = 'http://localhost:9000';
+const baseURL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'development' ? defaultDevApi : '/');
 const api = axios.create({
-  baseURL: 'http://localhost:9000',
-  withCredentials: true,  // Important for sending cookies
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+    Accept: 'application/json',
+  },
 });
 
-// Add request interceptor
+// Attach auth token if present in localStorage under 'access_token'
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (e) {
+      // ignore (e.g., restricted storage)
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Handle 401 responses
+// Handle 401 globally: clear token and redirect to /login (dev behavior)
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Remove token and redirect to login
-      localStorage.removeItem('access_token');
-      window.location.href = '/login';
+  (res) => res,
+  (err) => {
+    if (err && err.response && err.response.status === 401) {
+      try {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      } catch (e) {
+        // ignore
+      }
     }
-    return Promise.reject(error);
+    return Promise.reject(err);
   }
 );
-
-// Auth API
-export const authApi = {
-  register: (userData) => api.post('/auth/register', userData),
-  
-  login: async (email, password) => {
-    const response = await api.post('/auth/login', {
-      email,
-      password
-    }, {
-      withCredentials: true
-    });
-    
-    // Save the token to localStorage
-    if (response.data.access_token) {
-      localStorage.setItem('token', response.data.access_token);
-    }
-    
-    return response.data;
-  },
-  
-  getCurrentUser: () => api.get('/auth/me'),
-  
-  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
-  
-  resetPassword: (token, newPassword) => 
-    api.post('/auth/reset-password', { token, new_password: newPassword }),
-  
-  logout: () => api.post('/auth/logout')
-};
-
-// Books API
-export const booksApi = {
-  getAllBooks: () => api.get('/books'),
-  searchBooks: (params) => api.get('/books/search', { params }),
-  addBook: (bookData) => api.post('/books', bookData),
-  deleteBook: (id) => api.delete(`/books/${id}`)
-};
 
 export default api;
+
+// Authentication helpers (named export used by AuthContext)
+export const authApi = {
+  // login returns response.data (so callers can read access_token directly)
+  login: async (email, password) => {
+    const resp = await api.post('/auth/login', { email, password });
+    return resp.data;
+  },
+
+  register: (userData) => api.post('/auth/register', userData),
+
+  getCurrentUser: () => api.get('/auth/me'),
+
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+
+  resetPassword: (token, newPassword) => api.post('/auth/reset-password', { token, new_password: newPassword }),
+
+  logout: () => api.post('/auth/logout'),
+};
+
