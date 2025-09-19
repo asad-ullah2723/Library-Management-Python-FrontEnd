@@ -6,11 +6,23 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
-    { "name": "List Fines", "request": { "method": "GET", "url": "{{base_url}}/fines/?skip=0&limit=20" } },
-    { "name": "Create Fine", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{token}}"}], "body": { "mode": "raw", "raw": "{\n  \"fine_id\": \"FINE-0001\",\n  \"member_id\": 1,\n  \"amount\": 15.5,\n  \"reason\": \"Overdue\",\n  \"payment_status\": \"Unpaid\",\n  \"payment_date\": null\n}" }, "url": "{{base_url}}/fines/" } },
-    { "name": "Get Fine", "request": { "method": "GET", "url": "{{base_url}}/fines/{{id}}" } },
-    { "name": "Update Fine", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\n  \"payment_status\": \"Paid\",\n  \"payment_date\": \"2025-09-19\"\n}" }, "url": "{{base_url}}/fines/{{id}}" } },
-    { "name": "Delete Fine", "request": { "method": "DELETE", "url": "{{base_url}}/fines/{{id}}" } }
+    {
+      "name": "List Fines",
+      "request": {"method":"GET","header":[],"url":"{{base_url}}/fines/?skip=0&limit=20"}
+    },
+    {
+      "name": "Create Fine",
+      "request": {
+        "method": "POST",
+        "header": [ {"key":"Content-Type","value":"application/json"}, {"key":"Authorization","value":"Bearer {{token}}"} ],
+        "body": { "mode":"raw", "raw": "{\n  \"fine_id\": \"FINE-0001\",\n  \"member_id\": 1,\n  \"amount\": 15.5,\n  \"reason\": \"Overdue\",\n  \"payment_status\": \"Unpaid\",\n  \"payment_date\": null\n}" },
+        "url": "{{base_url}}/fines/"
+      }
+    },
+    {"name":"Get Fine","request":{"method":"GET","header":[],"url":"{{base_url}}/fines/{{id}}"}},
+    {"name":"Update Fine","request":{"method":"PUT","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"fine_id\": \"FINE-0001\",\n  \"member_id\": 1,\n  \"amount\": 20.0,\n  \"reason\": \"Lost\",\n  \"payment_status\": \"Paid\",\n  \"payment_date\": \"2025-09-19\"\n}"},"url":"{{base_url}}/fines/{{id}}"}},
+    {"name":"Delete Fine","request":{"method":"DELETE","header":[],"url":"{{base_url}}/fines/{{id}}"}}
   ],
-  "variable": [ { "key": "base_url", "value": "http://localhost:9000" }, { "key": "token", "value": "" } ]
+  "variable": [ {"key":"base_url","value":"http://localhost:9000"}, {"key":"token","value":""} ]
 }
+

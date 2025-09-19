@@ -19,14 +19,20 @@ export default function FineList() {
     } catch (err) {
       console.error('Failed to load fines', err);
       setFines([]);
-    } finally { setLoading(false); }
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   useEffect(() => { fetch(); }, [page]);
 
   const openCreate = () => { setSelected(null); setFormOpen(true); };
   const openEdit = (f) => { setSelected(f); setFormOpen(true); };
-  const handleFormClose = (refresh) => { setFormOpen(false); setSelected(null); if (refresh) fetch(); };
+  const handleFormClose = (refresh) => { 
+    setFormOpen(false); 
+    setSelected(null); 
+    if (refresh) fetch(); 
+  };
 
   return (
     <Box>
@@ -38,36 +44,40 @@ export default function FineList() {
       {loading ? (
         <Box display="flex" justifyContent="center" py={4}><CircularProgress /></Box>
       ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Fine ID</TableCell>
-                <TableCell>Member ID</TableCell>
-                <TableCell>Amount</TableCell>
-                <TableCell>Reason</TableCell>
-                <TableCell>Payment Status</TableCell>
-                <TableCell>Payment Date</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {fines.map(f => (
-                <TableRow key={f.id}>
-                  <TableCell>{f.fine_id}</TableCell>
-                  <TableCell>{f.member_id}</TableCell>
-                  <TableCell>{f.amount}</TableCell>
-                  <TableCell>{f.reason}</TableCell>
-                  <TableCell>{f.payment_status}</TableCell>
-                  <TableCell>{f.payment_date}</TableCell>
-                  <TableCell>
-                    <Button size="small" onClick={() => openEdit(f)}>Edit</Button>
-                  </TableCell>
+        fines.length === 0 ? (
+          <Typography align="center" py={4}>No fines found</Typography>
+        ) : (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Fine ID</TableCell>
+                  <TableCell>Member ID</TableCell>
+                  <TableCell>Amount</TableCell>
+                  <TableCell>Reason</TableCell>
+                  <TableCell>Payment Status</TableCell>
+                  <TableCell>Payment Date</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {fines.map(f => (
+                  <TableRow key={f.fine_id}>
+                    <TableCell>{f.fine_id}</TableCell>
+                    <TableCell>{f.member_id}</TableCell>
+                    <TableCell>{f.amount}</TableCell>
+                    <TableCell>{f.reason}</TableCell>
+                    <TableCell>{f.payment_status}</TableCell>
+                    <TableCell>{f.payment_date ? new Date(f.payment_date).toLocaleDateString() : '-'}</TableCell>
+                    <TableCell>
+                      <Button size="small" onClick={() => openEdit(f)}>Edit</Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )
       )}
 
       <Dialog open={formOpen} onClose={() => handleFormClose(false)} maxWidth="md" fullWidth>

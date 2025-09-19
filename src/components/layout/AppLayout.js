@@ -37,6 +37,9 @@ import StaffList from '../staff/StaffList';
 import TransactionList from '../transactions/TransactionList';
 import ReservationList from '../reservations/ReservationList';
 import FineList from '../fines/FineList';
+import SystemLogsReports from '../system/SystemLogsReports';
+import ReportsOverview from '../reports/ReportsOverview';
+import DailyActivityReport from '../reports/DailyActivityReport';
 
 const AppLayout = () => {
   const { user, logout } = useAuth();
@@ -170,6 +173,12 @@ const AppLayout = () => {
               <Button color="inherit" onClick={() => navigate('/fines')} sx={{ ml: 2 }}>
                 Fines
               </Button>
+              <Button color="inherit" onClick={() => navigate('/system-logs')} sx={{ ml: 2 }}>
+                System Logs & Reports
+              </Button>
+              <Button color="inherit" onClick={() => navigate('/reports')} sx={{ ml: 2 }}>
+                Reports
+              </Button>
             </>
           )}
         </Toolbar>
@@ -186,6 +195,9 @@ const AppLayout = () => {
             <Route path="/transactions" element={<TransactionList />} />
             <Route path="/reservations" element={<ReservationList />} />
             <Route path="/fines" element={<FineList />} />
+            <Route path="/system-logs" element={<SystemLogsReports />} />
+            <Route path="/reports" element={<ReportsOverview />} />
+            <Route path="/reports/daily" element={<DailyActivityReport />} />
           </Route>
         </Routes>
       </Container>
