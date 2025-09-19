@@ -1,0 +1,90 @@
+{
+  "info": {
+    "_postman_id": "b3b9f9a8-transaction-collection",
+    "name": "Library Transactions API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "List Transactions",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/transactions/",
+          "host": ["{{base_url}}"],
+          "path": ["transactions", ""]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Transaction",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transaction_id\": \"TXN-0001\",\n  \"member_id\": 1,\n  \"book_id\": 10,\n  \"issue_date\": \"2025-09-19\",\n  \"due_date\": \"2025-10-03\",\n  \"return_date\": null,\n  \"fine_details\": null,\n  \"renewal_count\": 0\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/transactions/",
+          "host": ["{{base_url}}"],
+          "path": ["transactions", ""]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Transaction",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Accept", "value": "application/json" } ],
+        "url": {
+          "raw": "{{base_url}}/transactions/:id",
+          "host": ["{{base_url}}"],
+          "path": ["transactions", ":id"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Transaction",
+      "request": {
+        "method": "PUT",
+        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"transaction_id\": \"TXN-0001\",\n  \"member_id\": 1,\n  \"book_id\": 10,\n  \"issue_date\": \"2025-09-19\",\n  \"due_date\": \"2025-10-03\",\n  \"return_date\": \"2025-09-25\",\n  \"fine_details\": \"No fine\",\n  \"renewal_count\": 1\n}" },
+        "url": { "raw": "{{base_url}}/transactions/:id", "host": ["{{base_url}}"], "path": ["transactions", ":id"] }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Transaction",
+      "request": {
+        "method": "DELETE",
+        "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "{{base_url}}/transactions/:id", "host": ["{{base_url}}"], "path": ["transactions", ":id"] }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": { "exec": [], "type": "text/javascript" }
+    },
+    {
+      "listen": "test",
+      "script": { "exec": [], "type": "text/javascript" }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:9000" },
+    { "key": "token", "value": "" }
+  ]
+}
