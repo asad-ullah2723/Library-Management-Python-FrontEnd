@@ -2,7 +2,7 @@ import React from 'react';
 import { DialogTitle, DialogContent, DialogActions, TextField, Button, Grid, Box, Alert } from '@mui/material';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import transactionService from '../transactions/TransactionList';
+import transactionService from '../../services/transactionService';
 
 const TransactionSchema = Yup.object().shape({
   transaction_id: Yup.string().required('Transaction ID is required'),
@@ -38,8 +38,17 @@ export default function TransactionForm({ transaction, onClose }) {
         if (typeof onClose === 'function') onClose(true);
       } catch (err) {
         console.error(err);
-        if (err.response && err.response.data && err.response.data.detail) {
-          setErrors({ _error: err.response.data.detail });
+        const detail = err?.response?.data?.detail;
+        if (detail) {
+          let msg = 'Server error: try again later';
+          if (Array.isArray(detail)) {
+            msg = detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+          } else if (typeof detail === 'object') {
+            msg = detail.msg || JSON.stringify(detail);
+          } else {
+            msg = String(detail);
+          }
+          setErrors({ _error: msg });
         } else {
           setErrors({ _error: 'Server error: try again later' });
         }

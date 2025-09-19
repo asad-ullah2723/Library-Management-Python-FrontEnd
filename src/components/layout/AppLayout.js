@@ -35,6 +35,7 @@ import CreateUserModal from '../admin/CreateUserModal';
 import MembersList from '../members/MembersList';
 import StaffList from '../staff/StaffList';
 import TransactionList from '../transactions/TransactionList';
+import ReservationList from '../reservations/ReservationList';
 
 const AppLayout = () => {
   const { user, logout } = useAuth();
@@ -162,6 +163,9 @@ const AppLayout = () => {
               <Button color="inherit" onClick={() => navigate('/transactions')} sx={{ ml: 2 }}>
                 Transactions
               </Button>
+              <Button color="inherit" onClick={() => navigate('/reservations')} sx={{ ml: 2 }}>
+                Reservations
+              </Button>
             </>
           )}
         </Toolbar>
@@ -176,6 +180,7 @@ const AppLayout = () => {
             <Route path="/members" element={<MembersList />} />
             <Route path="/staff" element={<StaffList />} />
             <Route path="/transactions" element={<TransactionList />} />
+            <Route path="/reservations" element={<ReservationList />} />
           </Route>
         </Routes>
       </Container>
