@@ -30,7 +30,10 @@ import ResetPassword from '../auth/ResetPassword';
 
 // Main App Components
 import LibraryApp from '../books/LibraryApp';
+import BookRecordsList from '../books/BookRecordsList';
 import CreateUserModal from '../admin/CreateUserModal';
+import MembersList from '../members/MembersList';
+import StaffList from '../staff/StaffList';
 
 const AppLayout = () => {
   const { user, logout } = useAuth();
@@ -144,6 +147,19 @@ const AppLayout = () => {
               </Button>
             </>
           )}
+          {user && (
+            <>
+              <Button color="inherit" onClick={() => navigate('/books/manage')} sx={{ ml: 2 }}>
+                Book Record
+              </Button>
+              <Button color="inherit" onClick={() => navigate('/members')} sx={{ ml: 2 }}>
+                Members
+              </Button>
+              <Button color="inherit" onClick={() => navigate('/staff')} sx={{ ml: 2 }}>
+                Staff
+              </Button>
+            </>
+          )}
         </Toolbar>
       </AppBar>
 
@@ -151,6 +167,10 @@ const AppLayout = () => {
         <Routes>
           <Route element={<PrivateRoute />}>
             <Route path="/" element={<LibraryApp />} />
+            <Route path="/books" element={<LibraryApp />} />
+            <Route path="/books/manage" element={<BookRecordsList />} />
+            <Route path="/members" element={<MembersList />} />
+            <Route path="/staff" element={<StaffList />} />
           </Route>
         </Routes>
       </Container>
