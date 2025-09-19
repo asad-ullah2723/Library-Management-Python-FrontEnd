@@ -36,6 +36,7 @@ import MembersList from '../members/MembersList';
 import StaffList from '../staff/StaffList';
 import TransactionList from '../transactions/TransactionList';
 import ReservationList from '../reservations/ReservationList';
+import FineList from '../fines/FineList';
 
 const AppLayout = () => {
   const { user, logout } = useAuth();
@@ -166,6 +167,9 @@ const AppLayout = () => {
               <Button color="inherit" onClick={() => navigate('/reservations')} sx={{ ml: 2 }}>
                 Reservations
               </Button>
+              <Button color="inherit" onClick={() => navigate('/fines')} sx={{ ml: 2 }}>
+                Fines
+              </Button>
             </>
           )}
         </Toolbar>
@@ -181,6 +185,7 @@ const AppLayout = () => {
             <Route path="/staff" element={<StaffList />} />
             <Route path="/transactions" element={<TransactionList />} />
             <Route path="/reservations" element={<ReservationList />} />
+            <Route path="/fines" element={<FineList />} />
           </Route>
         </Routes>
       </Container>

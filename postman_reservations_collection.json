@@ -1,7 +1,8 @@
 {
   "info": {
-    "_postman_id": "reservations-collection",
-    "name": "Library Reservations API",
+    "name": "Library API - Reservations",
+    "_postman_id": "resv-collection-001",
+    "description": "Postman collection for Reservations endpoints",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -9,44 +10,46 @@
       "name": "List Reservations",
       "request": {
         "method": "GET",
-        "header": [ { "key": "Accept", "value": "application/json" } ],
-        "url": { "raw": "{{base_url}}/reservations/", "host": ["{{base_url}}"], "path": ["reservations", ""] }
+        "header": [],
+        "url": "{{base_url}}/reservations/?skip=0&limit=20"
       }
     },
     {
       "name": "Create Reservation",
       "request": {
         "method": "POST",
-        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
-        "body": { "mode": "raw", "raw": "{\n  \"reservation_id\": \"RESV-0001\",\n  \"book_id\": 10,\n  \"member_id\": 1,\n  \"reservation_date\": \"2025-09-19\",\n  \"status\": \"Active\"\n}" },
-        "url": { "raw": "{{base_url}}/reservations/", "host": ["{{base_url}}"], "path": ["reservations", ""] }
+        "header": [
+          {"key":"Content-Type","value":"application/json"},
+          {"key":"Authorization","value":"Bearer {{token}}"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reservation_id\": \"RESV-0001\",\n  \"book_id\": 10,\n  \"member_id\": 1,\n  \"reservation_date\": \"2025-09-19\",\n  \"status\": \"Active\"\n}"
+        },
+        "url": "{{base_url}}/reservations/"
       }
     },
     {
       "name": "Get Reservation",
-      "request": {
-        "method": "GET",
-        "header": [ { "key": "Accept", "value": "application/json" } ],
-        "url": { "raw": "{{base_url}}/reservations/:id", "host": ["{{base_url}}"], "path": ["reservations", ":id"] }
-      }
+      "request": {"method": "GET", "header": [], "url": "{{base_url}}/reservations/{{id}}"}
     },
     {
       "name": "Update Reservation",
       "request": {
         "method": "PUT",
-        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
-        "body": { "mode": "raw", "raw": "{\n  \"reservation_id\": \"RESV-0001\",\n  \"book_id\": 10,\n  \"member_id\": 1,\n  \"reservation_date\": \"2025-09-20\",\n  \"status\": \"Fulfilled\"\n}" },
-        "url": { "raw": "{{base_url}}/reservations/:id", "host": ["{{base_url}}"], "path": ["reservations", ":id"] }
+        "header": [{"key":"Content-Type","value":"application/json"}],
+        "body": {"mode":"raw","raw":"{\n  \"reservation_id\": \"RESV-0001\",\n  \"book_id\": 10,\n  \"member_id\": 1,\n  \"reservation_date\": \"2025-09-19\",\n  \"status\": \"Fulfilled\"\n}"},
+        "url": "{{base_url}}/reservations/{{id}}"
       }
     },
     {
       "name": "Delete Reservation",
-      "request": {
-        "method": "DELETE",
-        "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
-        "url": { "raw": "{{base_url}}/reservations/:id", "host": ["{{base_url}}"], "path": ["reservations", ":id"] }
-      }
+      "request": {"method":"DELETE","header":[],"url":"{{base_url}}/reservations/{{id}}"}
     }
   ],
-  "variable": [ { "key": "base_url", "value": "http://localhost:9000" }, { "key": "token", "value": "" } ]
+  "variable": [
+    {"key":"base_url","value":"http://localhost:9000"},
+    {"key":"token","value":""}
+  ]
 }
+

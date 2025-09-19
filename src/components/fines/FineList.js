@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Dialog, CircularProgress } from '@mui/material';
-import reservationService from '../../services/reservationService';
-import ReservationForm from './ReservationForm';
+import FineForm from './FineForm';
+import fineService from '../../services/fineService';
 
-export default function ReservationList() {
-  const [reservations, setReservations] = useState([]);
+export default function FineList() {
+  const [fines, setFines] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [limit] = useState(20);
@@ -14,26 +14,25 @@ export default function ReservationList() {
   const fetch = async () => {
     setLoading(true);
     try {
-      const res = await reservationService.listReservations({ skip: page * limit, limit });
-      setReservations(res.data || res);
+      const res = await fineService.listFines({ skip: page * limit, limit });
+      setFines(res.data || res);
     } catch (err) {
-      console.error('Failed to load reservations', err);
-      setReservations([]);
+      console.error('Failed to load fines', err);
+      setFines([]);
     } finally { setLoading(false); }
   };
 
   useEffect(() => { fetch(); }, [page]);
 
   const openCreate = () => { setSelected(null); setFormOpen(true); };
-  const openEdit = (r) => { setSelected(r); setFormOpen(true); };
-
+  const openEdit = (f) => { setSelected(f); setFormOpen(true); };
   const handleFormClose = (refresh) => { setFormOpen(false); setSelected(null); if (refresh) fetch(); };
 
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h5">Reservations</Typography>
-        <Button variant="contained" onClick={openCreate}>Add Reservation</Button>
+        <Typography variant="h5">Fines</Typography>
+        <Button variant="contained" onClick={openCreate}>Add Fine</Button>
       </Box>
 
       {loading ? (
@@ -43,24 +42,26 @@ export default function ReservationList() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Reservation ID</TableCell>
-                <TableCell>Book ID</TableCell>
+                <TableCell>Fine ID</TableCell>
                 <TableCell>Member ID</TableCell>
-                <TableCell>Reservation Date</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>Amount</TableCell>
+                <TableCell>Reason</TableCell>
+                <TableCell>Payment Status</TableCell>
+                <TableCell>Payment Date</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {reservations.map(r => (
-                <TableRow key={r.id}>
-                  <TableCell>{r.reservation_id}</TableCell>
-                  <TableCell>{r.book_id}</TableCell>
-                  <TableCell>{r.member_id}</TableCell>
-                  <TableCell>{r.reservation_date}</TableCell>
-                  <TableCell>{r.status}</TableCell>
+              {fines.map(f => (
+                <TableRow key={f.id}>
+                  <TableCell>{f.fine_id}</TableCell>
+                  <TableCell>{f.member_id}</TableCell>
+                  <TableCell>{f.amount}</TableCell>
+                  <TableCell>{f.reason}</TableCell>
+                  <TableCell>{f.payment_status}</TableCell>
+                  <TableCell>{f.payment_date}</TableCell>
                   <TableCell>
-                    <Button size="small" onClick={() => openEdit(r)}>Edit</Button>
+                    <Button size="small" onClick={() => openEdit(f)}>Edit</Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -70,7 +71,7 @@ export default function ReservationList() {
       )}
 
       <Dialog open={formOpen} onClose={() => handleFormClose(false)} maxWidth="md" fullWidth>
-        <ReservationForm reservation={selected} onClose={handleFormClose} />
+        <FineForm fine={selected} onClose={handleFormClose} />
       </Dialog>
     </Box>
   );
