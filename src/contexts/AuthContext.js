@@ -28,12 +28,31 @@ export const AuthProvider = ({ children }) => {
       
       const response = await authApi.getCurrentUser();
       if (response.data) {
+        // Normalize role from possible shapes
+        const srv = response.data;
+        let role = srv.role;
+        if (!role && Array.isArray(srv.roles) && srv.roles.length) role = srv.roles[0];
+        if (!role && typeof srv.is_admin === 'boolean') role = srv.is_admin ? 'admin' : 'user';
+        // If still no role, try decode token claim
+        if (!role) {
+          try {
+            const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+            if (token) {
+              const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+              const payload = JSON.parse(atob(b64));
+              role = payload?.role || (payload?.data && payload.data.role) || role;
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+
         setUser({
-          id: response.data.id,
-          email: response.data.email,
-          name: response.data.full_name || response.data.email,
-          role: response.data.role,
-          is_active: response.data.is_active
+          id: srv.id,
+          email: srv.email,
+          name: srv.full_name || srv.email,
+          role,
+          is_active: srv.is_active
         });
       }
     } catch (err) {
@@ -54,18 +73,12 @@ export const AuthProvider = ({ children }) => {
       const response = await authApi.login(email, password);
       
       if (response?.access_token) {
-        // Store user data from the login response
-        const { access_token, user_id, email: userEmail, role } = response;
+        // Store token
+        const { access_token } = response;
         localStorage.setItem('access_token', access_token);
 
-        // Update user state (include role)
-        setUser({
-          id: user_id,
-          email: userEmail,
-          role,
-          isAuthenticated: true
-        });
-        
+        // Refresh current user from server to get canonical role & profile
+        await fetchCurrentUser();
         return { success: true };
       } else {
         throw new Error('No access token received');

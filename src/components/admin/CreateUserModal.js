@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Box, Typography, TextField, Button, MenuItem } from '@mui/material';
+import { Modal, Box, Typography, TextField, Button, MenuItem, Alert } from '@mui/material';
 import adminService from '../../services/adminService';
 
 const style = {
@@ -18,6 +18,8 @@ const roles = ['member', 'librarian', 'admin'];
 export default function CreateUserModal({ open, onClose, onCreated }) {
   const [form, setForm] = useState({ email: '', full_name: '', password: '', role: 'member', is_active: true });
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [severity, setSeverity] = useState('info');
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -27,12 +29,17 @@ export default function CreateUserModal({ open, onClose, onCreated }) {
     try {
       const resp = await adminService.createUser(form);
       setLoading(false);
+      // show success message, but keep modal open so admin can see the result
+      setMessage(resp.data?.message || 'User created successfully');
+      setSeverity('success');
       onCreated && onCreated(resp.data);
-      onClose();
     } catch (err) {
       setLoading(false);
       console.error('Create user failed', err);
-      alert('Failed to create user');
+      // try various shapes for backend error message
+      const errMsg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Failed to create user';
+      setMessage(errMsg);
+      setSeverity('error');
     }
   };
 
@@ -48,6 +55,9 @@ export default function CreateUserModal({ open, onClose, onCreated }) {
         <TextField select fullWidth label="Role" name="role" value={form.role} onChange={handleChange} sx={{ mb: 2 }}>
           {roles.map(r => <MenuItem key={r} value={r}>{r}</MenuItem>)}
         </TextField>
+        {message && (
+          <Alert severity={severity} sx={{ mb: 2 }}>{message}</Alert>
+        )}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button onClick={onClose} sx={{ mr: 1 }}>Cancel</Button>
           <Button type="submit" variant="contained" disabled={loading}>{loading ? 'Creating...' : 'Create'}</Button>

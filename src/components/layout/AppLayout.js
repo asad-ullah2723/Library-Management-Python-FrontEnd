@@ -23,6 +23,8 @@ import {
 // Auth Components
 import { useAuth } from '../../contexts/AuthContext';
 import PrivateRoute from '../auth/PrivateRoute';
+import AdminRoute from '../auth/AdminRoute';
+import RoleRoute from '../auth/RoleRoute';
 import Login from '../auth/Login';
 import Register from '../auth/Register';
 import ForgotPassword from '../auth/ForgotPassword';
@@ -40,6 +42,7 @@ import FineList from '../fines/FineList';
 import SystemLogsReports from '../system/SystemLogsReports';
 import ReportsOverview from '../reports/ReportsOverview';
 import DailyActivityReport from '../reports/DailyActivityReport';
+import AuthDebug from '../auth/AuthDebug';
 
 const AppLayout = () => {
   const { user, logout } = useAuth();
@@ -58,7 +61,6 @@ const AppLayout = () => {
   const handleLogout = () => {
     handleClose();
     logout();
-    navigate('/login');
   };
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -153,34 +155,110 @@ const AppLayout = () => {
               </Button>
             </>
           )}
-          {user && (
-            <>
-              <Button color="inherit" onClick={() => navigate('/books/manage')} sx={{ ml: 2 }}>
-                Book Record
-              </Button>
-              <Button color="inherit" onClick={() => navigate('/members')} sx={{ ml: 2 }}>
-                Members
-              </Button>
-              <Button color="inherit" onClick={() => navigate('/staff')} sx={{ ml: 2 }}>
-                Staff
-              </Button>
-              <Button color="inherit" onClick={() => navigate('/transactions')} sx={{ ml: 2 }}>
-                Transactions
-              </Button>
-              <Button color="inherit" onClick={() => navigate('/reservations')} sx={{ ml: 2 }}>
-                Reservations
-              </Button>
-              <Button color="inherit" onClick={() => navigate('/fines')} sx={{ ml: 2 }}>
-                Fines
-              </Button>
-              <Button color="inherit" onClick={() => navigate('/system-logs')} sx={{ ml: 2 }}>
-                System Logs & Reports
-              </Button>
-              <Button color="inherit" onClick={() => navigate('/reports')} sx={{ ml: 2 }}>
-                Reports
-              </Button>
-            </>
-          )}
+          {user && (() => {
+            const isAdmin = (() => {
+              if (!user) return false;
+              if (typeof user.role === 'string' && user.role.toLowerCase() === 'admin') return true;
+              if (user.is_admin === true) return true;
+              if (Array.isArray(user.roles) && user.roles.includes('admin')) return true;
+              try {
+                const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+                if (token) {
+                  const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+                  const payload = JSON.parse(atob(b64));
+                  const tokRole = payload?.role || (payload?.data && payload.data.role);
+                  if (typeof tokRole === 'string' && tokRole.toLowerCase() === 'admin') return true;
+                }
+              } catch (e) {
+                // ignore
+              }
+              return false;
+            })();
+
+            return (
+              <>
+                {/* Nav items based on role: Member, Librarian, Admin */}
+                {/* Book Record: members can search/view; librarians/admin manage */}
+                {(() => {
+                  // members: go to /books (search/view)
+                  if (typeof user.role === 'string' && user.role.toLowerCase() === 'admin') {
+                    return (
+                      <Button color="inherit" onClick={() => navigate('/books/manage')} sx={{ ml: 2 }}>
+                        Book Record
+                      </Button>
+                    );
+                  }
+                  if (typeof user.role === 'string' && user.role.toLowerCase() === 'librarian') {
+                    return (
+                      <Button color="inherit" onClick={() => navigate('/books/manage')} sx={{ ml: 2 }}>
+                        Book Record
+                      </Button>
+                    );
+                  }
+                  // default member
+                  return (
+                    <Button color="inherit" onClick={() => navigate('/books')} sx={{ ml: 2 }}>
+                      Book Record
+                    </Button>
+                  );
+                })()}
+
+                {/* Members list: librarians and admins */}
+                {(() => {
+                  if (isAdmin) return (
+                    <Button color="inherit" onClick={() => navigate('/members')} sx={{ ml: 2 }}>
+                      Members
+                    </Button>
+                  );
+                  // allow librarians
+                  if (user?.is_librarian === true || (Array.isArray(user?.roles) && user.roles.includes('librarian'))) {
+                    return (
+                      <Button color="inherit" onClick={() => navigate('/members')} sx={{ ml: 2 }}>
+                        Members
+                      </Button>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Staff management: admin only */}
+                {isAdmin && (
+                  <Button color="inherit" onClick={() => navigate('/staff')} sx={{ ml: 2 }}>
+                    Staff
+                  </Button>
+                )}
+
+                {/* Transactions: members see personal transactions; librarians/admins see full operations */}
+                <Button color="inherit" onClick={() => navigate(user?.role && user.role.toLowerCase() === 'member' ? '/transactions/my' : '/transactions')} sx={{ ml: 2 }}>
+                  Transactions
+                </Button>
+
+                {/* Reservations: members can reserve/cancel their own; librarians/admins manage */}
+                <Button color="inherit" onClick={() => navigate(user?.role && user.role.toLowerCase() === 'member' ? '/reservations/my' : '/reservations')} sx={{ ml: 2 }}>
+                  Reservations
+                </Button>
+
+                {/* Fines: members see/pays own; librarians/admins manage */}
+                <Button color="inherit" onClick={() => navigate(user?.role && user.role.toLowerCase() === 'member' ? '/fines/my' : '/fines')} sx={{ ml: 2 }}>
+                  Fines
+                </Button>
+
+                {/* System Logs & Reports: admin only */}
+                {isAdmin && (
+                  <Button color="inherit" onClick={() => navigate('/system-logs')} sx={{ ml: 2 }}>
+                    System Logs & Reports
+                  </Button>
+                )}
+
+                {/* Reports: members get personal reports; librarians/admins get broader access */}
+                <Button color="inherit" onClick={() => navigate(user?.role && user.role.toLowerCase() === 'member' ? '/reports/personal' : '/reports')} sx={{ ml: 2 }}>
+                  Reports
+                </Button>
+                {/* Dev-only auth debug button */}
+                {process.env.NODE_ENV === 'development' && <AuthDebug />}
+              </>
+            );
+          })()}
         </Toolbar>
       </AppBar>
 
@@ -189,15 +267,29 @@ const AppLayout = () => {
           <Route element={<PrivateRoute />}>
             <Route path="/" element={<LibraryApp />} />
             <Route path="/books" element={<LibraryApp />} />
-            <Route path="/books/manage" element={<BookRecordsList />} />
-            <Route path="/members" element={<MembersList />} />
-            <Route path="/staff" element={<StaffList />} />
-            <Route path="/transactions" element={<TransactionList />} />
-            <Route path="/reservations" element={<ReservationList />} />
-            <Route path="/fines" element={<FineList />} />
-            <Route path="/system-logs" element={<SystemLogsReports />} />
-            <Route path="/reports" element={<ReportsOverview />} />
-            <Route path="/reports/daily" element={<DailyActivityReport />} />
+
+            {/* Personal/member routes */}
+            <Route path="/transactions/my" element={<TransactionList personal={true} />} />
+            <Route path="/reservations/my" element={<ReservationList personal={true} />} />
+            <Route path="/fines/my" element={<FineList personal={true} />} />
+            <Route path="/reports/personal" element={<ReportsOverview personal={true} />} />
+
+            {/* Librarian+Admin routes */}
+            <Route element={<RoleRoute allowedRoles={["librarian", "admin"]} />}>
+              <Route path="/books/manage" element={<BookRecordsList />} />
+              <Route path="/members" element={<MembersList />} />
+              <Route path="/transactions" element={<TransactionList />} />
+              <Route path="/reservations" element={<ReservationList />} />
+              <Route path="/fines" element={<FineList />} />
+            </Route>
+
+            {/* Admin-only routes */}
+            <Route element={<RoleRoute allowedRoles={["admin"]} />}>
+              <Route path="/staff" element={<StaffList />} />
+              <Route path="/system-logs" element={<SystemLogsReports />} />
+              <Route path="/reports" element={<ReportsOverview />} />
+              <Route path="/reports/daily" element={<DailyActivityReport />} />
+            </Route>
           </Route>
         </Routes>
       </Container>
