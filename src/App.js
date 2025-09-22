@@ -1,34 +1,29 @@
 import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { CssBaseline, ThemeProvider } from '@mui/material';
 import { AuthProvider } from './contexts/AuthContext';
 import AppLayout from './components/layout/AppLayout';
+import createAppTheme from './theme/theme';
+import { ThemeModeProvider, useThemeMode } from './theme/ThemeModeContext';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h4: {
-      fontWeight: 600,
-    },
-  },
-});
+const AppInner = () => {
+  const { mode } = useThemeMode();
+  const theme = createAppTheme(mode);
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AppLayout />
+    </ThemeProvider>
+  );
+};
 
 const App = () => {
   return (
     <Router>
       <AuthProvider>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <AppLayout />
-        </ThemeProvider>
+        <ThemeModeProvider>
+          <AppInner />
+        </ThemeModeProvider>
       </AuthProvider>
     </Router>
   );

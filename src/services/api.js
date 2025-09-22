@@ -37,9 +37,9 @@ api.interceptors.response.use(
   (err) => {
     if (err && err.response && err.response.status === 401) {
       try {
+        // Clear tokens locally; don't force a redirect here. Let AuthContext decide UX.
         localStorage.removeItem('access_token');
         localStorage.removeItem('token');
-        window.location.href = '/login';
       } catch (e) {
         // ignore
       }

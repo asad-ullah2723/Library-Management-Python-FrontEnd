@@ -9,7 +9,8 @@ const PrivateRoute = () => {
     return <div>Loading...</div>; // Or a loading spinner
   }
 
-  return user ? <Outlet /> : <Navigate to="/login" replace />;
+  // If not authenticated, send visitor to public home instead of forcing the login page
+  return user ? <Outlet /> : <Navigate to="/" replace />;
 };
 
 export default PrivateRoute;

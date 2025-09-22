@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { authApi } from '../services/api';
 
 const AuthContext = createContext(null);
@@ -13,10 +13,66 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('access_token');
     if (token) {
       fetchCurrentUser();
+      // schedule token expiry cleanup if present
+      scheduleTokenExpiry(token);
     } else {
       setLoading(false);
     }
   }, []);
+
+  const expiryTimerRef = useRef(null);
+
+  const parseJwt = (token) => {
+    try {
+      const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const json = decodeURIComponent(atob(b64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(json);
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const clearExpiryTimer = () => {
+    if (expiryTimerRef.current) {
+      clearTimeout(expiryTimerRef.current);
+      expiryTimerRef.current = null;
+    }
+  };
+
+  const handleTokenExpired = () => {
+    try {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('token');
+    } catch (e) {
+      // ignore
+    }
+    clearExpiryTimer();
+    setUser(null);
+  };
+
+  const scheduleTokenExpiry = (token) => {
+    try {
+      clearExpiryTimer();
+      const payload = parseJwt(token);
+      if (!payload || !payload.exp) return;
+      const expiresAt = payload.exp * 1000; // ms
+      const now = Date.now();
+      const delay = Math.max(0, expiresAt - now);
+      if (delay === 0) {
+        // already expired
+        handleTokenExpired();
+        return;
+      }
+      // Schedule a cleanup slightly after expiry (add 1s cushion)
+      expiryTimerRef.current = setTimeout(() => {
+        handleTokenExpired();
+      }, delay + 1000);
+    } catch (e) {
+      // ignore
+    }
+  };
 
   const fetchCurrentUser = async () => {
     try {
@@ -58,8 +114,8 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.error('Failed to fetch user:', err);
       if (err.response?.status === 401) {
-        localStorage.removeItem('access_token');
-        setUser(null);
+        // token invalid/expired on server - clean locally
+        handleTokenExpired();
       }
     } finally {
       setLoading(false);
@@ -76,6 +132,8 @@ export const AuthProvider = ({ children }) => {
         // Store token
         const { access_token } = response;
         localStorage.setItem('access_token', access_token);
+        // Schedule automatic removal when token expires
+        scheduleTokenExpiry(access_token);
 
         // Refresh current user from server to get canonical role & profile
         await fetchCurrentUser();
@@ -111,7 +169,11 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
-      localStorage.removeItem('access_token');
+      try {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
+      } catch (e) {}
+      clearExpiryTimer();
       setUser(null);
     }
   };
@@ -174,6 +236,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     forgotPassword,
     resetPassword,
+    getToken: () => localStorage.getItem('access_token') || localStorage.getItem('token'),
     isAuthenticated: !!user
   };
 

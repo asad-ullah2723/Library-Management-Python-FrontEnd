@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Paper, Typography, Button, Box, TextField, InputAdornment } from '@mui/material';
+import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import BookForm from './BookForm';
-import BookSearch from './BookSearch';
 import BookList from './BookList';
 
 const LibraryApp = () => {
@@ -26,17 +26,41 @@ const LibraryApp = () => {
   const limit = 10; // Number of books per page
   const { user } = useAuth();
   const canModify = user?.role === 'admin' || user?.role === 'librarian';
+  const location = useLocation();
 
-  const fetchBooks = async () => {
+  // Fetch books: if q is provided, call the search endpoint (title/author), otherwise call listing
+  const fetchBooks = async (q) => {
     try {
       setLoading(true);
-      const response = await api.get('/books/', {
-        params: {
-          skip: (page - 1) * limit,
-          limit
-        }
-      });
-      setBooks(Array.isArray(response.data) ? response.data : []);
+      if (q) {
+        // Perform title OR author search by calling both endpoints and merging results
+        const [byTitle, byAuthor] = await Promise.all([
+          api.get('/books/search', { params: { title: q, skip: 0, limit: 100 } }).catch(() => ({ data: [] })),
+          api.get('/books/search', { params: { author: q, skip: 0, limit: 100 } }).catch(() => ({ data: [] })),
+        ]);
+        const combined = [];
+        const seen = new Set();
+        const addList = (arr) => {
+          (Array.isArray(arr) ? arr : []).forEach((b) => {
+            const id = b?.id ?? (b?.isbn || JSON.stringify(b));
+            if (!seen.has(id)) {
+              seen.add(id);
+              combined.push(b);
+            }
+          });
+        };
+        addList(byTitle.data);
+        addList(byAuthor.data);
+        setBooks(combined);
+      } else {
+        const response = await api.get('/books/', {
+          params: {
+            skip: (page - 1) * limit,
+            limit
+          }
+        });
+        setBooks(Array.isArray(response.data) ? response.data : []);
+      }
       // If your API returns total count in headers, use that instead
       // setTotalBooks(response.headers['x-total-count'] || 0);
     } catch (err) {
@@ -47,13 +71,23 @@ const LibraryApp = () => {
     }
   };
 
+  // React to page changes or header search query param changes
   useEffect(() => {
-    fetchBooks();
-  }, [page]);
-
-  useEffect(() => {
-    fetchBooks();
-  }, []);
+    const params = new URLSearchParams(location.search);
+    const q = params.get('search') || '';
+    if (q) {
+      // reflect in the simple title/author inputs to keep UI consistent
+      setSearchTitle(q);
+      setSearchAuthor(q);
+      fetchBooks(q);
+    } else {
+      // clear any previous quick-search values
+      setSearchTitle('');
+      setSearchAuthor('');
+      fetchBooks();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, location.search]);
 
   // Add new book
   const handleAddBook = async (e) => {
@@ -123,22 +157,7 @@ const LibraryApp = () => {
         </Paper>
       )}
 
-      {/* Search Books */}
-      <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" gutterBottom>Search Books</Typography>
-        <BookSearch 
-          searchTitle={searchTitle}
-          setSearchTitle={setSearchTitle}
-          searchAuthor={searchAuthor}
-          setSearchAuthor={setSearchAuthor}
-          minPrice={minPrice}
-          setMinPrice={setMinPrice}
-          maxPrice={maxPrice}
-          setMaxPrice={setMaxPrice}
-          handleSearch={handleSearch}
-          fetchBooks={fetchBooks}
-        />
-      </Paper>
+      {/* Search Books: header search used for title/author, in-page advanced search removed */}
 
       {/* Book List with Pagination */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>

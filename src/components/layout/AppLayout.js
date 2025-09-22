@@ -12,13 +12,7 @@ import {
   Divider,
   Container
 } from '@mui/material';
-import { 
-  AccountCircle, 
-  ExitToApp, 
-  Person, 
-  VpnKey, 
-  Home 
-} from '@mui/icons-material';
+import { AccountCircle, ExitToApp, Person, VpnKey, Brightness4, Brightness7 } from '@mui/icons-material';
 
 // Auth Components
 import { useAuth } from '../../contexts/AuthContext';
@@ -44,8 +38,12 @@ import ReportsOverview from '../reports/ReportsOverview';
 import DailyActivityReport from '../reports/DailyActivityReport';
 import AuthDebug from '../auth/AuthDebug';
 
+import { useThemeMode } from '../../theme/ThemeModeContext';
+import HeaderSearch from './HeaderSearch';
+
 const AppLayout = () => {
   const { user, logout } = useAuth();
+  const { mode, toggleMode } = useThemeMode();
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -85,12 +83,26 @@ const AppLayout = () => {
   return (
     <>
       <AppBar position="static" color="primary">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-            <Home sx={{ mr: 1 }} />
-            Library Management System
-          </Typography>
-          
+        <Toolbar sx={{ display: 'flex', alignItems: 'center' }}>
+          {/* left: logo + simple nav button for small screens */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+            <img src="/libroMatrix1.png" alt="LibroMatrix" style={{ height: 60, marginRight: 12 }} />
+            <Typography variant="h6" component="div" sx={{ display: { xs: 'none', sm: 'block' } }}>
+              LibroMatrix
+            </Typography>
+          </Box>
+
+          {/* centered search */}
+          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+            <HeaderSearch onSearch={(q) => {
+              // navigate to library search page with query
+              if (q) navigate(`/books?search=${encodeURIComponent(q)}`);
+              else navigate('/books');
+            }} />
+          </Box>
+
+          {/* right: auth actions + theme */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {user ? (
             <div>
               <IconButton
@@ -155,6 +167,12 @@ const AppLayout = () => {
               </Button>
             </>
           )}
+            {/* theme toggle */}
+            <IconButton sx={{ ml: 1 }} color="inherit" onClick={toggleMode}>
+              {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
+            </IconButton>
+          </Box>
+
           {user && (() => {
             const isAdmin = (() => {
               if (!user) return false;
@@ -175,33 +193,36 @@ const AppLayout = () => {
               return false;
             })();
 
+            const isLibrarian = (() => {
+              if (!user) return false;
+              if (typeof user.role === 'string' && user.role.toLowerCase() === 'librarian') return true;
+              if (user.is_librarian === true) return true;
+              if (Array.isArray(user.roles) && user.roles.includes('librarian')) return true;
+              try {
+                const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+                if (token) {
+                  const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+                  const payload = JSON.parse(atob(b64));
+                  const tokRole = payload?.role || (payload?.data && payload.data.role);
+                  if (typeof tokRole === 'string' && tokRole.toLowerCase() === 'librarian') return true;
+                }
+              } catch (e) {
+                // ignore
+              }
+              return false;
+            })();
+
+            const isMember = !!user && !isAdmin && !isLibrarian;
+
             return (
               <>
                 {/* Nav items based on role: Member, Librarian, Admin */}
-                {/* Book Record: members can search/view; librarians/admin manage */}
-                {(() => {
-                  // members: go to /books (search/view)
-                  if (typeof user.role === 'string' && user.role.toLowerCase() === 'admin') {
-                    return (
-                      <Button color="inherit" onClick={() => navigate('/books/manage')} sx={{ ml: 2 }}>
-                        Book Record
-                      </Button>
-                    );
-                  }
-                  if (typeof user.role === 'string' && user.role.toLowerCase() === 'librarian') {
-                    return (
-                      <Button color="inherit" onClick={() => navigate('/books/manage')} sx={{ ml: 2 }}>
-                        Book Record
-                      </Button>
-                    );
-                  }
-                  // default member
-                  return (
-                    <Button color="inherit" onClick={() => navigate('/books')} sx={{ ml: 2 }}>
-                      Book Record
-                    </Button>
-                  );
-                })()}
+                {/* Book Record: only show to librarians/admins (hide for regular members) */}
+                {!isMember && (isAdmin || isLibrarian) && (
+                  <Button color="inherit" onClick={() => navigate('/books/manage')} sx={{ ml: 2 }}>
+                    Book Record
+                  </Button>
+                )}
 
                 {/* Members list: librarians and admins */}
                 {(() => {
@@ -228,20 +249,26 @@ const AppLayout = () => {
                   </Button>
                 )}
 
-                {/* Transactions: members see personal transactions; librarians/admins see full operations */}
-                <Button color="inherit" onClick={() => navigate(user?.role && user.role.toLowerCase() === 'member' ? '/transactions/my' : '/transactions')} sx={{ ml: 2 }}>
-                  Transactions
-                </Button>
+                {/* Transactions: hide for regular members (members won't see this nav) */}
+                {!isMember && (
+                  <Button color="inherit" onClick={() => navigate('/transactions')} sx={{ ml: 2 }}>
+                    Transactions
+                  </Button>
+                )}
 
-                {/* Reservations: members can reserve/cancel their own; librarians/admins manage */}
-                <Button color="inherit" onClick={() => navigate(user?.role && user.role.toLowerCase() === 'member' ? '/reservations/my' : '/reservations')} sx={{ ml: 2 }}>
-                  Reservations
-                </Button>
+                {/* Reservations: hide nav for regular members; librarians/admins manage */}
+                {!isMember && (
+                  <Button color="inherit" onClick={() => navigate('/reservations')} sx={{ ml: 2 }}>
+                    Reservations
+                  </Button>
+                )}
 
-                {/* Fines: members see/pays own; librarians/admins manage */}
-                <Button color="inherit" onClick={() => navigate(user?.role && user.role.toLowerCase() === 'member' ? '/fines/my' : '/fines')} sx={{ ml: 2 }}>
-                  Fines
-                </Button>
+                {/* Fines: hide for regular members in the nav */}
+                {!isMember && (
+                  <Button color="inherit" onClick={() => navigate('/fines')} sx={{ ml: 2 }}>
+                    Fines
+                  </Button>
+                )}
 
                 {/* System Logs & Reports: admin only */}
                 {isAdmin && (
@@ -250,12 +277,14 @@ const AppLayout = () => {
                   </Button>
                 )}
 
-                {/* Reports: members get personal reports; librarians/admins get broader access */}
-                <Button color="inherit" onClick={() => navigate(user?.role && user.role.toLowerCase() === 'member' ? '/reports/personal' : '/reports')} sx={{ ml: 2 }}>
-                  Reports
-                </Button>
-                {/* Dev-only auth debug button */}
-                {process.env.NODE_ENV === 'development' && <AuthDebug />}
+                {/* Reports: hide for regular members */}
+                {!isMember && (
+                  <Button color="inherit" onClick={() => navigate('/reports')} sx={{ ml: 2 }}>
+                    Reports
+                  </Button>
+                )}
+                {/* Dev-only auth debug button (only for non-members in development) */}
+                {process.env.NODE_ENV === 'development' && !isMember && <AuthDebug />}
               </>
             );
           })()}
@@ -264,10 +293,12 @@ const AppLayout = () => {
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Routes>
-          <Route element={<PrivateRoute />}>
-            <Route path="/" element={<LibraryApp />} />
-            <Route path="/books" element={<LibraryApp />} />
+          {/* Public home and books listing */}
+          <Route path="/" element={<LibraryApp />} />
+          <Route path="/books" element={<LibraryApp />} />
 
+          {/* Auth pages are handled earlier; protected routes below */}
+          <Route element={<PrivateRoute />}>
             {/* Personal/member routes */}
             <Route path="/transactions/my" element={<TransactionList personal={true} />} />
             <Route path="/reservations/my" element={<ReservationList personal={true} />} />
