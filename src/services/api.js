@@ -14,6 +14,16 @@ const api = axios.create({
   },
 });
 
+// Public API instance: identical baseURL but does not add Authorization header.
+// Use this for endpoints that should be accessible without login (GET book listings/search).
+export const publicApi = axios.create({
+  baseURL,
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  },
+});
+
 // Attach auth token if present in localStorage under 'access_token'
 api.interceptors.request.use(
   (config) => {

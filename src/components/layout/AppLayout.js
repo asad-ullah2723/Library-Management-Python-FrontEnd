@@ -10,7 +10,8 @@ import {
   MenuItem, 
   Box, 
   Divider,
-  Container
+  Container,
+  // Dialog removed: we'll render a custom overlay so the inner card owns its chrome
 } from '@mui/material';
 import { AccountCircle, ExitToApp, Person, VpnKey, Brightness4, Brightness7 } from '@mui/icons-material';
 
@@ -37,9 +38,11 @@ import SystemLogsReports from '../system/SystemLogsReports';
 import ReportsOverview from '../reports/ReportsOverview';
 import DailyActivityReport from '../reports/DailyActivityReport';
 import AuthDebug from '../auth/AuthDebug';
+import Footer from './Footer';
 
 import { useThemeMode } from '../../theme/ThemeModeContext';
 import HeaderSearch from './HeaderSearch';
+import ImageSlider from './ImageSlider';
 
 const AppLayout = () => {
   const { user, logout } = useAuth();
@@ -65,6 +68,11 @@ const AppLayout = () => {
   const openCreateModal = () => { setCreateOpen(true); handleClose(); };
   const closeCreateModal = () => setCreateOpen(false);
 
+  // Local modal state for auth dialogs opened from header (overlay on slider)
+  const [authDialog, setAuthDialog] = useState({ open: false, view: 'login' });
+  const openAuthDialog = (view) => { setAuthDialog({ open: true, view }); };
+  const closeAuthDialog = () => setAuthDialog({ open: false, view: 'login' });
+
   // Don't show app bar on auth pages
   const isAuthPage = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
   
@@ -82,7 +90,7 @@ const AppLayout = () => {
 
   return (
     <>
-      <AppBar position="static" color="primary">
+      <AppBar position="fixed" color="primary">
         <Toolbar sx={{ display: 'flex', alignItems: 'center' }}>
           {/* left: logo + simple nav button for small screens */}
           <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
@@ -153,14 +161,14 @@ const AppLayout = () => {
             <>
               <Button 
                 color="inherit" 
-                onClick={() => navigate('/login')}
+                onClick={() => openAuthDialog('login')}
                 startIcon={<VpnKey />}
               >
                 Login
               </Button>
               <Button 
                 color="inherit" 
-                onClick={() => navigate('/register')}
+                onClick={() => openAuthDialog('register')}
                 startIcon={<Person />}
               >
                 Register
@@ -290,6 +298,32 @@ const AppLayout = () => {
           })()}
         </Toolbar>
       </AppBar>
+    {/* spacer so page content isn't hidden under the fixed header */}
+    <Toolbar />
+
+  {/* Home slider */}
+  <ImageSlider />
+
+  {/* Auth overlay — custom backdrop + centered card so inner card owns its chrome */}
+  {authDialog.open && (
+    <Box sx={{ position: 'fixed', inset: 0, zIndex: 1400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {/* backdrop */}
+  <Box onClick={closeAuthDialog} sx={{ position: 'fixed', inset: 0, bgcolor: 'rgba(0,0,0,0.65)' }} />
+
+      {/* centered content */}
+      <Box sx={{ zIndex: 1401, width: { xs: '90%', sm: 480 }, maxHeight: '90vh', overflow: 'auto' }}>
+        {authDialog.view === 'login' && (
+          <Login dialog onSwitch={(v) => setAuthDialog({ open: true, view: v })} onClose={closeAuthDialog} />
+        )}
+        {authDialog.view === 'register' && (
+          <Register dialog onSwitch={(v) => setAuthDialog({ open: true, view: v })} onClose={closeAuthDialog} />
+        )}
+        {authDialog.view === 'forgot' && (
+          <ForgotPassword dialog onSwitch={(v) => setAuthDialog({ open: true, view: v })} onClose={closeAuthDialog} />
+        )}
+      </Box>
+    </Box>
+  )}
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Routes>
@@ -325,6 +359,7 @@ const AppLayout = () => {
         </Routes>
       </Container>
       <CreateUserModal open={createOpen} onClose={closeCreateModal} />
+      <Footer />
     </>
   );
 };

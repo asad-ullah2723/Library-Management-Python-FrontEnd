@@ -12,9 +12,10 @@ import {
   Alert,
   CircularProgress
 } from '@mui/material';
-import { Email as EmailIcon } from '@mui/icons-material';
+import { Email as EmailIcon, Close as CloseIcon } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
 
-const ForgotPassword = () => {
+const ForgotPassword = ({ dialog = false, onClose, onSwitch }) => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -54,8 +55,13 @@ const ForgotPassword = () => {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Paper elevation={3} sx={{ mt: 8, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <Container component="main" maxWidth={dialog ? false : 'xs'} sx={dialog ? { p: 0 } : {}}>
+      <Paper elevation={3} sx={{ mt: dialog ? 0 : 8, p: dialog ? 3 : 4, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+        {dialog && typeof onClose === 'function' && (
+          <IconButton onClick={onClose} size="small" sx={{ position: 'absolute', right: 8, top: 8 }}>
+            <CloseIcon />
+          </IconButton>
+        )}
         <EmailIcon color="primary" sx={{ fontSize: 40, mb: 2 }} />
         <Typography component="h1" variant="h5">
           Forgot Password
@@ -101,9 +107,15 @@ const ForgotPassword = () => {
         )}
         
         <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <MuiLink component={Link} to="/login" variant="body2">
-            Back to Sign In
-          </MuiLink>
+          {dialog && typeof onSwitch === 'function' ? (
+            <MuiLink component="button" onClick={() => onSwitch('login')} variant="body2" sx={{ cursor: 'pointer' }}>
+              Back to Sign In
+            </MuiLink>
+          ) : (
+            <MuiLink component={Link} to="/login" variant="body2">
+              Back to Sign In
+            </MuiLink>
+          )}
         </Box>
       </Paper>
     </Container>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Paper, Typography, Button, Box, TextField, InputAdornment } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
-import api from '../../services/api';
+import api, { publicApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import BookForm from './BookForm';
 import BookList from './BookList';
@@ -35,8 +35,8 @@ const LibraryApp = () => {
       if (q) {
         // Perform title OR author search by calling both endpoints and merging results
         const [byTitle, byAuthor] = await Promise.all([
-          api.get('/books/search', { params: { title: q, skip: 0, limit: 100 } }).catch(() => ({ data: [] })),
-          api.get('/books/search', { params: { author: q, skip: 0, limit: 100 } }).catch(() => ({ data: [] })),
+          publicApi.get('/books/search', { params: { title: q, skip: 0, limit: 100 } }).catch(() => ({ data: [] })),
+          publicApi.get('/books/search', { params: { author: q, skip: 0, limit: 100 } }).catch(() => ({ data: [] })),
         ]);
         const combined = [];
         const seen = new Set();
@@ -53,7 +53,7 @@ const LibraryApp = () => {
         addList(byAuthor.data);
         setBooks(combined);
       } else {
-        const response = await api.get('/books/', {
+        const response = await publicApi.get('/books/', {
           params: {
             skip: (page - 1) * limit,
             limit
