@@ -3,6 +3,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, G
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import bookService from '../../services/bookService';
+import { publicApi } from '../../services/api';
 
 // Helpers: ISBN checksum validators (ISBN-10 and ISBN-13) and cleaning
 // Helpers: ISBN checksum validators (ISBN-10 and ISBN-13) and cleaning
@@ -87,6 +88,7 @@ export default function BookForm({ book, onClose }) {
     published_date: book?.published_date || '',
     current_status: book?.current_status || 'Available',
     shelf_number: book?.shelf_number || '',
+    image: null,
   };
 
   const mapServerErrors = (detailArray, setErrors) => {
@@ -105,7 +107,7 @@ export default function BookForm({ book, onClose }) {
     <Formik initialValues={initialValues} validationSchema={BookSchema} enableReinitialize onSubmit={async (values, { setSubmitting, setErrors }) => {
       // Coerce/clean payload so backend receives proper types (numbers or omitted/null instead of empty strings)
       const payload = { ...values };
-      try {
+  try {
         // Numbers: pages, price
         if (payload.pages === '') delete payload.pages;
         else if (payload.pages !== undefined && payload.pages !== null) payload.pages = Number(payload.pages);
@@ -121,10 +123,28 @@ export default function BookForm({ book, onClose }) {
         if (payload.accession_number === '') delete payload.accession_number;
         if (payload.isbn === '') delete payload.isbn;
 
-        if (book && book.id) {
-          await bookService.updateBook(book.id, payload);
+        // If an image file was provided, send FormData so backend can upload it (pCloud handling server-side)
+  if (values.image) {
+          const fd = new FormData();
+          // Remove the image key from payload (we'll send the file separately)
+          if (payload.image !== undefined) delete payload.image;
+          // Backend expects a single 'book' field containing the JSON string
+          fd.append('book', JSON.stringify(payload));
+          // File field name expected by backend is 'file'. Also append under 'image' to
+          // tolerate clients/backends that use either key.
+          fd.append('file', values.image);
+          fd.append('image', values.image);
+          if (book && book.id) {
+            await bookService.updateBook(book.id, fd, true);
+          } else {
+            await bookService.createBook(fd, true);
+          }
         } else {
-          await bookService.createBook(payload);
+          if (book && book.id) {
+            await bookService.updateBook(book.id, payload);
+          } else {
+            await bookService.createBook(payload);
+          }
         }
         // Only call onClose if a function was provided (modal usage)
         if (typeof onClose === 'function') onClose(true);
@@ -137,7 +157,7 @@ export default function BookForm({ book, onClose }) {
         }
       } finally { setSubmitting(false); }
     }}>
-      {({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => {
+  {({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, setFieldValue }) => {
         const isModal = typeof onClose === 'function';
         const safeClose = (val) => { if (isModal) onClose(val); };
         const formContent = (
@@ -149,6 +169,41 @@ export default function BookForm({ book, onClose }) {
               <Grid item xs={12}><TextField label="Title" name="title" value={values.title} onChange={handleChange} onBlur={handleBlur} fullWidth error={touched.title && !!errors.title} helperText={touched.title && errors.title} /></Grid>
               <Grid item xs={12} sm={6}><TextField label="Author" name="author" value={values.author} onChange={handleChange} onBlur={handleBlur} fullWidth error={touched.author && !!errors.author} helperText={touched.author && errors.author} /></Grid>
               <Grid item xs={12} sm={6}><TextField label="Publisher" name="publisher" value={values.publisher} onChange={handleChange} onBlur={handleBlur} fullWidth /></Grid>
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                  <input
+                    accept="image/*"
+                    id="book-image"
+                    type="file"
+                    name="image"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.currentTarget.files && e.currentTarget.files[0];
+                      setFieldValue('image', file);
+                    }}
+                  />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <label htmlFor="book-image">
+                      <Button variant="outlined" component="span">Choose file</Button>
+                    </label>
+                    <Box component="span" sx={{ fontSize: 14, color: 'text.secondary' }}>
+                      {values.image ? values.image.name : (book?.image_url ? 'Current image' : 'No file chosen')}
+                    </Box>
+                  </Box>
+                  {book?.image_url && !values.image && (
+                    <Box component="img" src={(function(){
+                      const u = book.image_url;
+                      if (!u) return '';
+                      if (/^https?:\/\//i.test(u)) return u;
+                      const base = publicApi && publicApi.defaults && publicApi.defaults.baseURL ? publicApi.defaults.baseURL : '';
+                      return `${base.replace(/\/$/, '')}/${u.replace(/^\//, '')}`;
+                    })()} alt="book" sx={{ mt: 1, maxWidth: 120, maxHeight: 160, objectFit: 'contain', borderRadius: 1, p: 1, bgcolor: 'grey.100' }} />
+                  )}
+                  {values.image && (
+                    <Box component="img" src={URL.createObjectURL(values.image)} alt="preview" sx={{ mt: 1, maxWidth: 120, maxHeight: 160, objectFit: 'contain', borderRadius: 1, p: 1, bgcolor: 'grey.100' }} />
+                  )}
+                </Box>
+              </Grid>
               <Grid item xs={12} sm={4}><TextField label="Edition" name="edition" value={values.edition} onChange={handleChange} onBlur={handleBlur} fullWidth /></Grid>
               <Grid item xs={12} sm={4}><TextField label="Genre" name="genre" value={values.genre} onChange={handleChange} onBlur={handleBlur} fullWidth /></Grid>
               <Grid item xs={12} sm={4}><TextField label="Language" name="language" value={values.language} onChange={handleChange} onBlur={handleBlur} fullWidth /></Grid>

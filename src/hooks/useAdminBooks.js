@@ -17,7 +17,8 @@ export function useAdminBooks({ initialPage = 0, pageSize = 20, initialFilters =
       const limit = opts.pageSize ?? pageSize;
       const params = { skip, limit, ...(opts.filters ?? filters) };
       const resp = await adminService.listBooks(params);
-      setBooks(resp.data || []);
+  console.debug('admin listBooks resp.data:', resp.data);
+  setBooks(resp.data || []);
       if (resp.data && resp.data.total !== undefined) setTotal(resp.data.total);
     } catch (e) {
       setError(e);

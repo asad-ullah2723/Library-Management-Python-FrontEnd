@@ -22,8 +22,7 @@ const LibraryApp = () => {
   });
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [totalBooks, setTotalBooks] = useState(0);
-  const limit = 10; // Number of books per page
+  const limit = 20; // items per page for pagination
   const { user } = useAuth();
   const canModify = user?.role === 'admin' || user?.role === 'librarian';
   const location = useLocation();
@@ -32,7 +31,7 @@ const LibraryApp = () => {
   const fetchBooks = async (q) => {
     try {
       setLoading(true);
-      if (q) {
+  if (q) {
         // Perform title OR author search by calling both endpoints and merging results
         const [byTitle, byAuthor] = await Promise.all([
           publicApi.get('/books/search', { params: { title: q, skip: 0, limit: 100 } }).catch(() => ({ data: [] })),
@@ -51,14 +50,13 @@ const LibraryApp = () => {
         };
         addList(byTitle.data);
         addList(byAuthor.data);
+        console.debug('Books search combined result:', combined);
         setBooks(combined);
       } else {
-        const response = await publicApi.get('/books/', {
-          params: {
-            skip: (page - 1) * limit,
-            limit
-          }
-        });
+        // Fetch books for the current page using skip/limit
+        const response = await publicApi.get('/books/', { params: { skip: (page - 1) * limit, limit } });
+        console.debug('Books page response.data (len):', Array.isArray(response.data) ? response.data.length : 'N/A', response.data);
+        console.debug('Books page response.headers:', response.headers);
         setBooks(Array.isArray(response.data) ? response.data : []);
       }
       // If your API returns total count in headers, use that instead
@@ -71,7 +69,7 @@ const LibraryApp = () => {
     }
   };
 
-  // React to page changes or header search query param changes
+  // React to header search query param changes
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const q = params.get('search') || '';
@@ -79,6 +77,8 @@ const LibraryApp = () => {
       // reflect in the simple title/author inputs to keep UI consistent
       setSearchTitle(q);
       setSearchAuthor(q);
+      // when searching, reset to first page of results and fetch without pagination
+      setPage(1);
       fetchBooks(q);
     } else {
       // clear any previous quick-search values
@@ -87,7 +87,7 @@ const LibraryApp = () => {
       fetchBooks();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, location.search]);
+  }, [location.search, page]);
 
   // Add new book
   const handleAddBook = async (e) => {
@@ -144,7 +144,7 @@ const LibraryApp = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4, px: { xs: 2, sm: 3, md: 6 }, maxWidth: 1200, marginX: 'auto' }}>
       {/* Add Book Form */}
       {canModify && (
         <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
@@ -162,23 +162,17 @@ const LibraryApp = () => {
       {/* Book List with Pagination */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Book Collection</Typography>
-        <Box>
-          <Button 
-            variant="outlined" 
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            sx={{ mr: 1 }}
-          >
-            Previous
-          </Button>
-          <Button 
-            variant="outlined"
-            onClick={() => setPage(p => p + 1)}
-            disabled={books.length < limit}
-          >
-            Next
-          </Button>
-        </Box>
+        {/* Pagination controls (hidden while searching) */}
+        {!(searchTitle || searchAuthor) && (
+          <Box>
+            <Button variant="outlined" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} sx={{ mr: 1 }}>
+              Previous
+            </Button>
+            <Button variant="outlined" onClick={() => setPage(p => p + 1)} disabled={books.length < limit}>
+              Next
+            </Button>
+          </Box>
+        )}
       </Box>
       
       <BookList 
@@ -189,7 +183,7 @@ const LibraryApp = () => {
       
       {books.length === 0 && !loading && (
         <Typography variant="body1" color="textSecondary" sx={{ mt: 2, textAlign: 'center' }}>
-          No books found. {page > 1 ? 'Go back to previous pages.' : 'Add a new book to get started!'}
+          No books found. Add a new book to get started!
         </Typography>
       )}
     </Container>
